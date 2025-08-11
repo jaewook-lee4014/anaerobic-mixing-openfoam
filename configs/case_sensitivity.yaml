@@ -1,0 +1,98 @@
+# Sensitivity analysis configuration - varying flow rates and nozzle configurations
+project: "digester_sensitivity"
+
+paths:
+  case_root: "runs/sensitivity"
+  template_root: "case_templates"
+  output_root: "data/processed/sensitivity"
+
+# Base configuration (will be varied)
+base_config:
+  geometry:
+    tank:
+      L: 20.0
+      W: 8.0
+      H: 16.0
+    
+  fluid:
+    T: 308.15
+    rho: 998.0
+    mu: 0.00074
+    nu: 7.4e-7
+    
+  solver:
+    name: "pimpleFoam"
+    dt: 0.05
+    endTime: 900  # Shorter runs for sensitivity
+    writeInterval: 50
+    adjustTimeStep: yes
+    maxCo: 2.0
+
+# Parameter variations for sensitivity analysis
+variations:
+  flow_rate:
+    - name: "low_flow"
+      pump_total_m3ph: 300.0
+      nozzle_count: 32
+      
+    - name: "medium_flow"
+      pump_total_m3ph: 430.0
+      nozzle_count: 32
+      
+    - name: "high_flow"
+      pump_total_m3ph: 550.0
+      nozzle_count: 32
+      
+  nozzle_angle:
+    - name: "angle_30"
+      pitch_deg: 30.0
+      pump_total_m3ph: 430.0
+      
+    - name: "angle_45"
+      pitch_deg: 45.0
+      pump_total_m3ph: 430.0
+      
+    - name: "angle_60"
+      pitch_deg: 60.0
+      pump_total_m3ph: 430.0
+      
+  nozzle_count:
+    - name: "nozzles_16"
+      count: 16
+      array: [4, 4]
+      pump_total_m3ph: 430.0
+      
+    - name: "nozzles_24"
+      count: 24
+      array: [4, 6]
+      pump_total_m3ph: 430.0
+      
+    - name: "nozzles_32"
+      count: 32
+      array: [4, 8]
+      pump_total_m3ph: 430.0
+      
+    - name: "nozzles_48"
+      count: 48
+      array: [6, 8]
+      pump_total_m3ph: 430.0
+
+# Analysis settings
+analysis:
+  metrics:
+    - "mean_velocity"
+    - "velocity_variance"
+    - "mixing_time_90pct"
+    - "dead_zones_volume_pct"
+    - "energy_density_w_per_m3"
+    
+  regions:
+    - name: "bottom"
+      z_range: [0, 4]
+    - name: "middle"
+      z_range: [4, 12]
+    - name: "top"
+      z_range: [12, 16]
+    - name: "corners"
+      x_range: [0, 2]
+      y_range: [0, 2]

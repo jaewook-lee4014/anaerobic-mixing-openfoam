@@ -1,0 +1,104 @@
+# Production case configuration - 32 nozzles, 430 m³/h total flow
+project: "digester_prod_of11"
+
+paths:
+  case_root: "runs/prod"
+  template_root: "case_templates"
+  output_root: "data/processed/prod"
+
+geometry:
+  tank:
+    L: 20.0  # Length (m)
+    W: 8.0   # Width (m)
+    H: 16.0  # Height (m)
+    
+  nozzle:
+    count: 32
+    throat_diameter_mm: 35.0
+    pitch_deg: 45.0  # Upward angle
+    array: [4, 8]  # 4 rows × 8 columns
+    start_offset_m: [1.0, 1.0]  # Offset from walls
+    spacing_m: [6.0, 1.0]  # Spacing between nozzles
+    zone_radius_m: 0.2  # Radius of momentum source zone
+    zone_height_m: 0.5  # Height of momentum source zone
+    
+  screen:
+    type: "porous"
+    center: [10.0, 4.0, 8.0]  # Center position (x, y, z)
+    radius: 0.3  # Radius (m) - Ø0.6 m
+    height: 1.0  # Height (m)
+    darcy: [5000, 5000, 500]  # Darcy coefficient (1/m²)
+    forchheimer: [50, 50, 5]  # Forchheimer coefficient (1/m)
+    
+mesh:
+  # Industrial-grade mesh resolution for accurate CFD
+  type: "structured"
+  cells: [200, 80, 160]  # nx, ny, nz - Total: 2,560,000 cells base
+  grading: [1.0, 1.0, 1.2]  # Slight vertical grading for stratification
+  base_cell_size: 0.1  # Fine base resolution
+  refinement_zones:
+    - type: "box"  # Refine near nozzles (jet exit region)
+      min: [0, 0, 0]
+      max: [20, 8, 4]
+      level: 2  # 4x refinement -> ~5M cells total
+    - type: "cylinder"  # Refine jet development region
+      center: [10, 4, 2]
+      radius: 6
+      height: 6
+      level: 1  # 2x refinement
+    - type: "box"  # Refine free surface region
+      min: [0, 0, 14]
+      max: [20, 8, 16]
+      level: 1
+  wall_layers: 5  # Proper boundary layer resolution
+  y_plus_target: 30  # Target y+ for wall functions
+  max_aspect_ratio: 10  # Control cell quality
+  max_skewness: 0.5  # Ensure mesh quality
+  
+fluid:
+  T: 308.15  # Temperature (K) - 35°C (mesophilic digestion)
+  # Anaerobic digester sludge properties (3-4% TS typical)
+  rho: 1015.0  # Density (kg/m³) - digester sludge at 3.5% TS
+  mu: 0.0035  # Dynamic viscosity (Pa·s) - non-Newtonian approximation
+  nu: 3.45e-6  # Kinematic viscosity (m²/s) - mu/rho
+  
+operation:
+  pump_total_m3ph: 430.0  # Total pump flow rate (m³/h)
+  head_m: 15.0  # Total dynamic head (m)
+  nozzle_split: "equal"  # Flow distribution: equal
+  nozzle_flow_m3ph: 13.44  # Per-nozzle flow (430/32)
+  jet_velocity_mps: 3.9  # Effective jet velocity
+  schedule:
+    frequency_hz: 60
+    runs_per_day: 3
+    hours_per_run: 2
+    
+solver:
+  name: "pimpleFoam"
+  dt: 0.05  # Time step (s)
+  endTime: 1800  # End time (s) - 30 minutes
+  writeInterval: 100  # Write interval (timesteps)
+  adjustTimeStep: yes
+  maxCo: 2.0
+  
+turbulence:
+  model: "kEpsilon"
+  k_init: 0.01
+  epsilon_init: 0.001
+  
+export:
+  planes:
+    - {z: 1.6}   # z/H = 0.1
+    - {z: 8.0}   # z/H = 0.5
+    - {z: 14.4}  # z/H = 0.9
+  fields: ["U", "k", "epsilon", "nut", "p_rgh"]
+  sample_interval: 100
+  
+targets:
+  mean_velocity_mps: 0.30  # Target mean velocity (m/s)
+  mlss_deviation_pct: 5.0  # Target MLSS deviation (%)
+  mixing_time_min: 30  # Target mixing time (minutes)
+  
+energy:
+  pump_efficiency: 0.65  # Pump efficiency
+  motor_efficiency: 0.90  # Motor efficiency

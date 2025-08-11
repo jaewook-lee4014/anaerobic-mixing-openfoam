@@ -1,0 +1,51 @@
+Bootstrap: docker
+From: openfoam/openfoam11-paraview:latest
+
+%post
+    # Update and install Python
+    apt-get update
+    apt-get install -y \
+        python3.11 \
+        python3-pip \
+        python3.11-venv \
+        git \
+        vim \
+        wget
+    rm -rf /var/lib/apt/lists/*
+    
+    # Set Python 3.11 as default
+    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+    
+    # Upgrade pip
+    python3 -m pip install --upgrade pip setuptools wheel
+    
+    # Install uv
+    pip install uv
+    
+    # Create app directory
+    mkdir -p /app
+
+%environment
+    export PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/bin:${PATH}"
+    export LD_LIBRARY_PATH="/opt/openfoam11/platforms/linux64GccDPInt32Opt/lib:${LD_LIBRARY_PATH}"
+    export WM_PROJECT_DIR="/opt/openfoam11"
+    . /opt/openfoam11/etc/bashrc
+
+%runscript
+    . /opt/openfoam11/etc/bashrc
+    exec "$@"
+
+%labels
+    Author Engineering Team
+    Version 0.1.0
+    Description OpenFOAM 11 with Python for anaerobic digester simulation
+
+%help
+    This container provides OpenFOAM 11 with Python 3.11 for running
+    anaerobic digester mixing simulations.
+    
+    Usage:
+    apptainer exec of11.sif amx run-case --config config.yaml --out runs/
+    
+    To build:
+    apptainer build of11.sif docker/apptainer.def

@@ -1,0 +1,47 @@
+# Base configuration for anaerobic digester mixing simulation
+project: "digester_base"
+
+paths:
+  case_root: "runs/base"
+  template_root: "case_templates"
+  output_root: "data/processed"
+
+geometry:
+  tank:
+    L: 20.0  # Length (m)
+    W: 8.0   # Width (m)
+    H: 16.0  # Height (m)
+    
+  mesh:
+    base_cell_size: 0.3  # Base cell size (m)
+    refinement_levels: 2
+    wall_layers: 3
+    
+fluid:
+  T: 308.15  # Temperature (K) - 35°C
+  rho: 998.0  # Density (kg/m³)
+  mu: 0.00074  # Dynamic viscosity (Pa·s)
+  nu: 7.4e-7  # Kinematic viscosity (m²/s)
+  
+solver:
+  name: "pimpleFoam"
+  dt: 0.05  # Time step (s)
+  endTime: 1800  # End time (s) - 30 minutes
+  writeInterval: 100  # Write interval (timesteps)
+  adjustTimeStep: no
+  maxCo: 1.5
+  
+turbulence:
+  model: "kEpsilon"
+  k_init: 0.01
+  epsilon_init: 0.001
+  
+export:
+  format: "vtk"
+  fields: ["U", "k", "epsilon", "nut", "p_rgh"]
+  sample_interval: 100
+  
+targets:
+  mean_velocity_mps: 0.30  # Target mean velocity (m/s)
+  mlss_deviation_pct: 5.0  # Target MLSS deviation (%)
+  mixing_time_min: 30  # Target mixing time (minutes)

@@ -1,0 +1,114 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v11                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     {{ solver }};
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         {{ endTime }};
+
+deltaT          {{ deltaT }};
+
+writeControl    timeStep;
+
+writeInterval   {{ writeInterval }};
+
+purgeWrite      0;
+
+writeFormat     binary;
+
+writePrecision  8;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+adjustTimeStep  {{ adjustTimeStep | default('no') }};
+
+maxCo           {{ maxCo | default(1.0) }};
+
+functions
+{
+    fieldAverage
+    {
+        type            fieldAverage;
+        libs            ("libfieldFunctionObjects.so");
+        writeControl    writeTime;
+        fields
+        (
+            U
+            {
+                mean        on;
+                prime2Mean  off;
+                base        time;
+            }
+            p
+            {
+                mean        on;
+                prime2Mean  off;
+                base        time;
+            }
+        );
+    }
+
+    {% for plane in planes %}
+    planeSample{{ loop.index0 }}
+    {
+        type            surfaces;
+        libs            ("libsampling.so");
+        writeControl    timeStep;
+        writeInterval   {{ sampleInterval | default(100) }};
+        surfaceFormat   vtk;
+        fields          (U k epsilon nut p_rgh);
+        interpolationScheme cellPoint;
+        surfaces
+        (
+            plane{{ loop.index0 }}
+            {
+                type        cuttingPlane;
+                planeType   pointAndNormal;
+                pointAndNormalDict
+                {
+                    point   (0 0 {{ plane.z }});
+                    normal  (0 0 1);
+                }
+                interpolate true;
+            }
+        );
+    }
+    {% endfor %}
+
+    minMaxU
+    {
+        type            fieldMinMax;
+        libs            ("libfieldFunctionObjects.so");
+        fields          (U);
+        location        yes;
+        writeControl    timeStep;
+        writeInterval   {{ writeInterval }};
+    }
+}
+
+// ************************************************************************* //
